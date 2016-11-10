@@ -76,7 +76,7 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 	g_assert(value != NULL);
 	memset(gpios, 0, sizeof(*gpios));
 	g_variant_get(
-    value, "((&s&sa(sb)a(sb))(&s&s&s&sa(sb)))",
+    value, "(&s&sa(sb)a(sb)&s&s&s&sa(sb))",
     &power_good_in_name, &latch_out_name,
     &power_up_outs_iter, &reset_outs_iter,
     &fsi_data_name, &fsi_clk_name,
