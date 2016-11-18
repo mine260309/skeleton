@@ -98,16 +98,16 @@ poll_pgood(gpointer user_data)
 				gpio_close(reset_out);
 			}
 
-			for(i = 0; i < g_power_gpio.num_pci_reset_outs; i++)
+			for(i = 0; i < g_gpio_configs.power_gpio.num_pci_reset_outs; i++)
 			{
-				GPIO *pci_reset_out = &g_power_gpio.pci_reset_outs[i];
+				GPIO *pci_reset_out = &g_gpio_configs.power_gpio.pci_reset_outs[i];
 				if(pgood_state == 1)
 				{
 					/*
 					 * When powering on, hold PCI reset until
 					 * the processor can forward clocks and control reset.
 					 */
-					if(g_power_gpio.pci_reset_holds[i])
+					if(g_gpio_configs.power_gpio.pci_reset_holds[i])
 					{
 						g_print("Holding pci reset: %s\n", pci_reset_out->name);
 						continue;
@@ -121,7 +121,7 @@ poll_pgood(gpointer user_data)
 					continue;
 				}
 
-				reset_state = pgood_state ^ !g_power_gpio.pci_reset_pols[i];
+				reset_state = pgood_state ^ !g_gpio_configs.power_gpio.pci_reset_pols[i];
 				g_print("PowerControl: setting pci reset %s to %d\n", pci_reset_out->name,
 						(int)reset_state);
 				gpio_write(pci_reset_out, reset_state);
@@ -177,23 +177,23 @@ on_boot_progress(GDBusConnection *connection,
 	if(strcmp(boot_progress, "FW Progress, Baseboard Init") == 0)
 		return;
 
-	rc = gpio_open(&g_power_gpio.power_good_in);
+	rc = gpio_open(&g_gpio_configs.power_gpio.power_good_in);
 	if(rc != GPIO_OK)
 	{
 		g_print("ERROR PowerControl: on_boot_progress(): GPIO open error (gpio=%s,rc=%d)\n",
-			g_power_gpio.power_good_in.name, rc);
+			g_gpio_configs.power_gpio.power_good_in.name, rc);
 		return;
 	}
-	rc = gpio_read(&g_power_gpio.power_good_in, &pgood_state);
-	gpio_close(&g_power_gpio.power_good_in);
+	rc = gpio_read(&g_gpio_configs.power_gpio.power_good_in, &pgood_state);
+	gpio_close(&g_gpio_configs.power_gpio.power_good_in);
 	if(rc != GPIO_OK || pgood_state != 1)
 		return;
 
-	for(i = 0; i < g_power_gpio.num_pci_reset_outs; i++)
+	for(i = 0; i < g_gpio_configs.power_gpio.num_pci_reset_outs; i++)
 	{
-		GPIO *pci_reset_out = &g_power_gpio.pci_reset_outs[i];
+		GPIO *pci_reset_out = &g_gpio_configs.power_gpio.pci_reset_outs[i];
 
-		if(!g_power_gpio.pci_reset_holds[i])
+		if(!g_gpio_configs.power_gpio.pci_reset_holds[i])
 			continue;
 		rc = gpio_open(pci_reset_out);
 		if(rc != GPIO_OK)
@@ -203,7 +203,7 @@ on_boot_progress(GDBusConnection *connection,
 			continue;
 		}
 
-		reset_state = pgood_state ^ !g_power_gpio.pci_reset_pols[i];
+		reset_state = pgood_state ^ !g_gpio_configs.power_gpio.pci_reset_pols[i];
 		g_print("PowerControl: setting pci reset %s to %d\n", pci_reset_out->name,
 				(int)reset_state);
 		gpio_write(pci_reset_out, reset_state);

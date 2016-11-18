@@ -191,14 +191,14 @@ class SystemManager(DbusProperties, DbusObjectManager):
         latch_out = power_config.get('latch_out', '')
         power_up_outs = power_config.get('power_up_outs', [])
         reset_outs = power_config.get('reset_outs', [])
-        pci_reset_outs = System.POWER_CONFIG.get('pci_reset_outs', [])
+        pci_reset_outs = System.GPIO_CONFIGS.get('pci_reset_outs', [])
         hostctl_config = System.GPIO_CONFIGS.get('hostctl_config', {})
         fsi_data = hostctl_config.get('fsi_data', '')
         fsi_clk = hostctl_config.get('fsi_clk', '')
         fsi_enable = hostctl_config.get('fsi_enable', '')
         cronus_sel = hostctl_config.get('cronus_sel', '')
         optionals = hostctl_config.get('optionals', [])
-        r = [power_good_in, latch_out, power_up_outs, reset_outs, pci_reset_outs\
+        r = [power_good_in, latch_out, power_up_outs, reset_outs, pci_reset_outs,\
              fsi_data, fsi_clk, fsi_enable, cronus_sel, optionals]
         print "Power GPIO config: " + str(r)
         return r

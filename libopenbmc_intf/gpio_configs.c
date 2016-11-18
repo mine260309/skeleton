@@ -31,10 +31,14 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 	gchar *latch_out_name;
 	GVariantIter *power_up_outs_iter;
 	GVariantIter *reset_outs_iter;
+  GVariantIter *pci_reset_outs_iter;
 	gchar *power_up_out_name;
 	gchar *reset_out_name;
+  gchar *pci_reset_out_name;
 	gboolean power_up_polarity;
 	gboolean reset_out_polarity;
+  gboolean pci_reset_out_polarity;
+  gboolean pci_reset_out_hold;
 
   gchar *fsi_data_name;
   gchar *fsi_clk_name;
@@ -76,9 +80,9 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 	g_assert(value != NULL);
 	memset(gpios, 0, sizeof(*gpios));
 	g_variant_get(
-    value, "(&s&sa(sb)a(sb)&s&s&s&sa(sb))",
+    value, "(&s&sa(sb)a(sb)a(sbb)&s&s&s&sa(sb))",
     &power_good_in_name, &latch_out_name,
-    &power_up_outs_iter, &reset_outs_iter,
+    &power_up_outs_iter, &reset_outs_iter, &pci_reset_outs_iter,
     &fsi_data_name, &fsi_clk_name,
     &fsi_enable_name, &cronus_sel_name,
     &optionals_iter);
@@ -118,6 +122,26 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 		gpios->power_gpio.reset_pols[i] = reset_out_polarity;
 	}
 
+  gpios->power_gpio.num_pci_reset_outs = g_variant_iter_n_children(pci_reset_outs_iter);
+  g_print("Power GPIO %d pci reset outputs\n", gpios->power_gpio.num_pci_reset_outs);
+  gpios->power_gpio.pci_reset_outs = g_malloc0_n(gpios->power_gpio.num_pci_reset_outs,
+      sizeof(GPIO));
+  gpios->power_gpio.pci_reset_pols = g_malloc0_n(gpios->power_gpio.num_pci_reset_outs,
+      sizeof(gboolean));
+  gpios->power_gpio.pci_reset_holds = g_malloc0_n(gpios->power_gpio.num_pci_reset_outs,
+      sizeof(gboolean));
+  for(i = 0; g_variant_iter_next(pci_reset_outs_iter, "(&sbb)", &pci_reset_out_name,
+        &pci_reset_out_polarity, &pci_reset_out_hold); i++) {
+    g_print("Power GPIO pci reset[%d] = %s active %s, hold - %s\n", i,
+        pci_reset_out_name,
+        pci_reset_out_polarity ? "HIGH" : "LOW",
+        pci_reset_out_hold ? "Yes" : "No");
+    gpios->power_gpio.pci_reset_outs[i].name = g_strdup(pci_reset_out_name);
+    gpios->power_gpio.pci_reset_pols[i] = pci_reset_out_polarity;
+    gpios->power_gpio.pci_reset_holds[i] = pci_reset_out_hold;
+  }
+
+
 	g_print("FSI DATA GPIO: %s\n", fsi_data_name);
 	gpios->hostctl_gpio.fsi_data.name = strdup(fsi_data_name);
 
@@ -142,6 +166,7 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 
 	g_variant_iter_free(power_up_outs_iter);
 	g_variant_iter_free(reset_outs_iter);
+  g_variant_iter_free(pci_reset_outs_iter);
   g_variant_iter_free(optionals_iter);
 	g_variant_unref(value);
 
@@ -162,6 +187,12 @@ void free_gpios(GpioConfigs *gpios) {
 	}
 	g_free(gpios->power_gpio.reset_outs);
 	g_free(gpios->power_gpio.reset_pols);
+  for(i = 0; i < gpios->power_gpio.num_pci_reset_outs; i++) {
+    g_free(gpios->power_gpio.pci_reset_outs[i].name);
+  }
+  g_free(gpios->power_gpio.pci_reset_outs);
+  g_free(gpios->power_gpio.pci_reset_pols);
+  g_free(gpios->power_gpio.pci_reset_holds);
 
   g_free(gpios->hostctl_gpio.fsi_data.name);
   g_free(gpios->hostctl_gpio.fsi_clk.name);
