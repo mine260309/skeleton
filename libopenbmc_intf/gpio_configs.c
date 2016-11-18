@@ -25,7 +25,7 @@
 gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 {
 	GDBusProxy *proxy;
-	GError *error;
+	GError *error = NULL;
 	GVariant *value;
 	gchar *power_good_in_name;
 	gchar *latch_out_name;
@@ -60,14 +60,14 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 	}
 
 	value = g_dbus_proxy_call_sync(proxy,
-			"getPowerConfiguration",
+			"getGpioConfiguration",
 			NULL,
 			G_DBUS_CALL_FLAGS_NONE,
 			-1,
 			NULL,
 			&error);
 	if(error != NULL) {
-		fprintf(stderr, "Power GPIO: call to getPowerConfiguration failed: %s\n",
+		fprintf(stderr, "Power GPIO: call to getGpioConfiguration failed: %s\n",
 				error->message);
 		g_error_free(error);
 		return FALSE;
@@ -83,11 +83,11 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
     &fsi_enable_name, &cronus_sel_name,
     &optionals_iter);
 
-	g_print("Power GPIO latch output %s\n", latch_out_name);
+	g_print("Power GPIO latch output: %s\n", latch_out_name);
 	if(*latch_out_name != '\0') {  /* latch is optional */
 		gpios->power_gpio.latch_out.name = strdup(latch_out_name);
 	}
-	g_print("Power GPIO power good input %s\n", power_good_in_name);
+	g_print("Power GPIO power good input: %s\n", power_good_in_name);
 	gpios->power_gpio.power_good_in.name = g_strdup(power_good_in_name);
 	gpios->power_gpio.num_power_up_outs = g_variant_iter_n_children(
 			power_up_outs_iter);
@@ -118,23 +118,23 @@ gboolean read_gpios(GDBusConnection *connection, GpioConfigs *gpios)
 		gpios->power_gpio.reset_pols[i] = reset_out_polarity;
 	}
 
-	g_print("FSI DATA GPIO %s\n", fsi_data_name);
+	g_print("FSI DATA GPIO: %s\n", fsi_data_name);
 	gpios->hostctl_gpio.fsi_data.name = strdup(fsi_data_name);
 
-	g_print("FSI CLK GPIO %s\n", fsi_clk_name);
+	g_print("FSI CLK GPIO: %s\n", fsi_clk_name);
 	gpios->hostctl_gpio.fsi_clk.name = strdup(fsi_clk_name);
 
-	g_print("FSI ENABLE GPIO %s\n", fsi_enable_name);
+	g_print("FSI ENABLE GPIO: %s\n", fsi_enable_name);
 	gpios->hostctl_gpio.fsi_enable.name = strdup(fsi_enable_name);
 
-	g_print("CRONUS SEL GPIO %s\n", cronus_sel_name);
+	g_print("CRONUS SEL GPIO: %s\n", cronus_sel_name);
 	gpios->hostctl_gpio.cronus_sel.name = strdup(cronus_sel_name);
 
   gpios->hostctl_gpio.num_optionals = g_variant_iter_n_children(optionals_iter);
-  g_print("Hostctl GPIO optionals: %zu", gpios->hostctl_gpio.num_optionals);
+  g_print("Hostctl GPIO optionals: %zu\n", gpios->hostctl_gpio.num_optionals);
   gpios->hostctl_gpio.optionals = g_malloc0_n(gpios->hostctl_gpio.num_optionals, sizeof(GPIO));
   gpios->hostctl_gpio.optional_pols = g_malloc0_n(gpios->hostctl_gpio.num_optionals, sizeof(gboolean));
-  for (i = 0; g_variant_iter_next(optionals_iter, "(&sb)", optional_name, optional_polarity); ++i) {
+  for (i = 0; g_variant_iter_next(optionals_iter, "(&sb)", &optional_name, &optional_polarity); ++i) {
     g_print("Hostctl optional GPIO[%d] = %s active %s\n", i, optional_name, optional_polarity ? "HIGH" : "LOW");
     gpios->hostctl_gpio.optionals[i].name = g_strdup(optional_name);
     gpios->hostctl_gpio.optional_pols[i] = optional_polarity;

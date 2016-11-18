@@ -186,7 +186,7 @@ class SystemManager(DbusProperties, DbusObjectManager):
     @dbus.service.method(DBUS_NAME, in_signature='',
             out_signature='ssa(sb)a(sb)a(sbb)ssssa(sb)')
     def getGpioConfiguration(self):
-        power_config = System.GPIO_CONFIG.get('power_config', {})
+        power_config = System.GPIO_CONFIGS.get('power_config', {})
         power_good_in = power_config.get('power_good_in', '')
         latch_out = power_config.get('latch_out', '')
         power_up_outs = power_config.get('power_up_outs', [])
